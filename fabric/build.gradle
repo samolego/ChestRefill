@@ -11,11 +11,15 @@ architectury {
     fabric()
 }
 
+repositories {
+    maven { url = "https://maven.nucleoid.xyz/" }
+}
+
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
-    // Remove the next line if you don't want to depend on the API
-    modApi "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+    modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
+
+    //modImplementation include("com.github.samolego:Config2Brigadier:config2brigadier-fabric:${rootProject.c2b_version}")
 
     implementation(project(path: ":common", configuration: "dev")) {
         transitive = false
