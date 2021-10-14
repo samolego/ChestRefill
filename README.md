@@ -1,6 +1,13 @@
 # ChestRefill
 A serverside mod that refills loot containers.
 
+### How-to
+1. Put the mod in your `mods/` folder.
+2. Restart the game / server.
+   1. Tweak the config if you need, then use `/chestrefill reload`
+3. Generate / create **new** loot chests.
+4. Loot them, wait for given time (default: 4 hours) and reloot them again with another account!
+
 ## Features
 * configurable (time, max fills, reset loot seed ...)
 * permission support (`chestrefill.allowReloot`)
@@ -48,39 +55,41 @@ Do you want the end city loot table refilled more times than default?
 Set the following options.
 
 ```json
-
-"// Map to override above config for certain loot tables only.": "",
-"lootModifierMap": {
-  "minecraft:chests/end_city_treasure": {
-    "randomize_loot_seed": true,
-    "allow_reloot_without_permission": true,
-    "max_refills": 100,
-    "refill_non_empty": false,
-    "min_wait_time": 60
-  },
-  "sample_mod:chests/custom_loot_table": {
-    "randomize_loot_seed": true,
-    "allow_reloot_without_permission": false,
-    "max_refills": 5,
-    "refill_non_empty": false,
-    "min_wait_time": 14400
+{
+  "...": "",
+  "// Map to override above config for certain loot tables only.": "",
+  "lootModifierMap": {
+    "minecraft:chests/end_city_treasure": {
+      "randomize_loot_seed": true,
+      "allow_reloot_without_permission": true,
+      "max_refills": 100,
+      "refill_non_empty": false,
+      "min_wait_time": 60
+    },
+    "sample_mod:chests/custom_loot_table": {
+      "randomize_loot_seed": true,
+      "allow_reloot_without_permission": false,
+      "max_refills": 5,
+      "refill_non_empty": false,
+      "min_wait_time": 14400
+    }
   }
 }
 ```
 
 This will cause the `minecraft:chests/end_city_treasure` to be
 * relootable by same players
-* refillanle `100` times
+* refillable `100` times
 * refilled each `60` seconds
 
 
 ## Per-container customization
 
 You can customize a chest using the `NBT` tags. These will override
-the config defaults.
+the both config defaults and loot table overrides.
 
 ```nbtt
-{
+
     ChestRefill: {
             RefillCounter: 0,
             SavedLootTable: "minecraft:chests/igloo_chest",
@@ -90,7 +99,13 @@ the config defaults.
                 MinWaitTime: 60
             }
     }
-}
+
+```
+(`RandomizeLootSeed` and `RefillNonEmpty` custom values are also available.)
+
+The command would look like the following:
+```brigadier
+/setblock ~ ~ ~ minecraft:chest{ChestRefill: {RefillCounter: 0, SavedLootTable: "minecraft:chests/igloo_chest", CustomValues: {AllowReloot: 1b, MaxRefills: -1, MinWaitTime: 60}}}
 ```
 
 This will create a lootable container that can be

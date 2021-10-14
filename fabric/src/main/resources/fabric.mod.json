@@ -3,13 +3,14 @@
   "id": "chestrefill",
   "version": "${version}",
   "name": "Chest Refill",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "description": "A serverside mod that refills loot containers.",
   "authors": [
     "samo_lego"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/samolego/ChestRefill",
+    "sources": "https://github.com/samolego/ChestRefill",
+    "issues": "https://github.com/samolego/ChestRefill/issues"
   },
   "license": "MIT",
   "icon": "assets/chestrefill/icon.png",
@@ -22,10 +23,6 @@
   "mixins": ["chestrefill.common.mixins.json"],
   "depends": {
     "fabricloader": ">=0.7.4",
-    "fabric": "*",
-    "minecraft": ">=1.16.4"
-  },
-  "suggests": {
-    "flamingo": "*"
+    "fabric": "*"
   }
 }

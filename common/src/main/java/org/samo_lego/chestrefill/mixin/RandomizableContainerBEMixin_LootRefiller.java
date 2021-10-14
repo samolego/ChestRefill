@@ -123,6 +123,8 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
             CompoundTag customValues = refillTag.getCompound("CustomValues");
             if(!customValues.isEmpty()) {
                 this.hadCustomData = true;
+                this.randomizeLootSeed = customValues.getBoolean("RandomizeLootSeed");
+                this.refillFull = customValues.getBoolean("RefillNonEmpty");
                 this.allowRelootByDefault = customValues.getBoolean("AllowReloot");
                 this.maxRefills = customValues.getInt("MaxRefills");
                 this.minWaitTime = customValues.getLong("MinWaitTime");
@@ -135,8 +137,8 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
 
     @Inject(method = "trySaveLootTable", at = @At("HEAD"))
     private void onLootTableSave(CompoundTag compoundTag, CallbackInfoReturnable<Boolean> cir) {
-        if(this.lootTable == null && this.savedLootTable != null && canStillRefill()) {
-            // Save only if chest was looted and can still be refilled
+        if(this.lootTable == null && this.savedLootTable != null) {
+            // Save only if chest was looted (if there's no more original loot table)
             CompoundTag refillTag = new CompoundTag();
 
             refillTag.putString("SavedLootTable", this.savedLootTable.toString());
@@ -151,6 +153,9 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
             // Allows per-chest customization
             if (this.hadCustomData) {
                 CompoundTag customValues = new CompoundTag();
+
+                customValues.putBoolean("RandomizeLootSeed", this.randomizeLootSeed);
+                customValues.putBoolean("RefillNonEmpty", this.refillFull);
                 customValues.putBoolean("AllowReloot", this.allowRelootByDefault);
                 customValues.putInt("MaxRefills", this.maxRefills);
                 customValues.putLong("MinWaitTime", this.minWaitTime);
@@ -168,8 +173,8 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
      */
     @Unique
     private boolean canRefillFor(Player player) {
-        boolean canReloot = hasPermission(player.createCommandSourceStack(), "chestrefill.allowReloot", this.allowRelootByDefault) || !this.lootedUUIDs.contains(player.getStringUUID());
-        return this.canStillRefill() && this.hasEnoughTimePassed() && canReloot;
+        boolean relootPermission = hasPermission(player.createCommandSourceStack(), "chestrefill.allowReloot", this.allowRelootByDefault) || !this.lootedUUIDs.contains(player.getStringUUID());
+        return this.canStillRefill() && this.hasEnoughTimePassed() && relootPermission;
     }
 
 
@@ -179,7 +184,7 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
      */
     @Unique
     private boolean canStillRefill() {
-        return this.refillCounter < this.maxRefills || this.maxRefills != -1;
+        return this.refillCounter < this.maxRefills || this.maxRefills == -1;
     }
 
     /**

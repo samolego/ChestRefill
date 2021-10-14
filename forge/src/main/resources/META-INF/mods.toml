@@ -1,35 +1,29 @@
 modLoader = "javafml"
 loaderVersion = "[37,)"
-#issueTrackerURL = ""
-license = "Insert License Here"
+issueTrackerURL = "https://github.com/samolego/ChestRefill/issues"
+source = "https://github.com/samolego/ChestRefill"
+license = "MIT"
 
 [[mods]]
-modId = "examplemod"
+modId = "chestrefill"
 version = "${version}"
-displayName = "Example Mod"
-authors = "Me!"
+displayName = "Chest Refill"
+authors = "samo_lego"
 description = '''
-This is an example description! Tell everyone what your mod is about!
+A serverside mod that refills loot containers.
 '''
 #logoFile = ""
 
-[[dependencies.examplemod]]
+[[dependencies.chestrefill]]
 modId = "forge"
 mandatory = true
 versionRange = "[37,)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.examplemod]]
+[[dependencies.chestrefill]]
 modId = "minecraft"
 mandatory = true
 versionRange = "[1.17.1,)"
 ordering = "NONE"
-side = "BOTH"
-
-[[dependencies.examplemod]]
-modId = "architectury"
-mandatory = true
-versionRange = "[2.3.23,)"
-ordering = "AFTER"
 side = "BOTH"
