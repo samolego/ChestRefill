@@ -2,43 +2,64 @@ package org.samo_lego.chestrefill.storage;
 
 import com.google.gson.annotations.SerializedName;
 import org.samo_lego.config2brigadier.IBrigadierConfigurator;
+import org.samo_lego.config2brigadier.annotation.BrigadierDescription;
 import org.samo_lego.config2brigadier.annotation.BrigadierExcluded;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.samo_lego.chestrefill.ChestRefill.*;
 
 public class LootConfig implements IBrigadierConfigurator {
 
-    @SerializedName("// Whether to randomize loot table seed.")
-    public final String _comment_randomizeLootSeed0 = "";
-    @SerializedName("// This ensures that regenerated loot is different each time.")
-    public final String _comment_randomizeLootSeed1 = "(default: true)";
-    @SerializedName("randomize_loot_seed")
-    public boolean randomizeLootSeed = true;
 
-    @SerializedName("// Whether to allow players to reloot containers,")
-    public final String _comment_allowRelootByDefault0 = "";
-    @SerializedName("// even if they don't have `chestrefill.allowReloot` permission.")
-    public final String _comment_allowRelootByDefault1 = "(default: false)";
-    @SerializedName("allow_reloot_without_permission")
-    public boolean allowRelootByDefault = false;
+    public DefaultProperties defaultProperties = new DefaultProperties();
+    public static class DefaultProperties {
+        @BrigadierDescription(
+                value = "Whether to randomize loot table seed.\nThis ensures that regenerated loot is different each time",
+                defaultOption = "true"
+        )
+        @SerializedName("randomize_loot_seed")
+        public boolean randomizeLootSeed = true;
 
-    @SerializedName("// Max refills per container, inclusive. -1 for unlimited")
-    public final String _comment_maxRefills = "(default: 5)";
-    @SerializedName("max_refills")
-    public int maxRefills = 5;
+        @BrigadierDescription(
+                value = "Whether to allow players to reloot containers,\neven if they don't have `chestrefill.allowReloot` permission.",
+                defaultOption = "false"
+        )
+        @SerializedName("allow_reloot_without_permission")
+        public boolean allowRelootByDefault = false;
 
-    @SerializedName("// Whether to add loot even if container has some items already.")
-    public final String _comment_refillFull = "(default: false)";
-    @SerializedName("refill_non_empty")
-    public boolean refillFull = false;
+        @BrigadierDescription(
+                value = "Max refills per container, inclusive. -1 for unlimited.",
+                defaultOption = "5"
+        )
+        @SerializedName("max_refills")
+        public int maxRefills = 5;
 
-    @SerializedName("// Minimum wait time to refill the loot, in seconds.")
-    public final String _comment_minWaitTime = "(default: 14400 (=4 hours))";
-    @SerializedName("min_wait_time") // in seconds
-    public long minWaitTime = 14400;
+        @BrigadierDescription(
+                value = "Whether to add loot even if container has some items already.",
+                defaultOption = "false"
+        )
+        @SerializedName("refill_non_empty")
+        public boolean refillFull = false;
+
+        @BrigadierDescription(
+                value = "Minimum wait time to refill the loot, in seconds.",
+                defaultOption = "14400 ( = 4 hours)"
+        )
+        @SerializedName("min_wait_time")
+        public long minWaitTime = 14400;
+    }
+
+    @SerializedName("// Map to override above config for certain loot tables only.")
+    public final String _comment_lootModifierMap = "";
+    public Map<String, DefaultProperties> lootModifierMap = Stream.of(new Object[][] {
+                    { "//minecraft:chests/igloo_chest", new DefaultProperties() },
+                    { "sample_mod:chests/custom_loot_table", new DefaultProperties() }
+            }).collect(Collectors.toMap(data -> (String) data[0], data -> (DefaultProperties) data[1]));
 
     @BrigadierExcluded
     public transient String fileLocation;

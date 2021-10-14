@@ -9,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import org.jetbrains.annotations.Nullable;
+import org.samo_lego.chestrefill.storage.LootConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -28,6 +29,9 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
 
     @Shadow @Nullable protected ResourceLocation lootTable;
 
+    @Unique
+    private boolean hadCustomData = false;
+
     @Shadow public abstract void setLootTable(ResourceLocation resourceLocation, long l);
 
     @Shadow protected abstract NonNullList<ItemStack> getItems();
@@ -40,61 +44,94 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
     private long savedLootTableSeed = 0L;
     @Unique
     private final Set<String> lootedUUIDs = new HashSet<>();
+
     @Unique
     private long lastRefillTime = 0L;
 
     @Unique
+    private long minWaitTime = config.defaultProperties.minWaitTime;
+
+    @Unique
+    private boolean allowRelootByDefault = config.defaultProperties.allowRelootByDefault;
+
+    @Unique
+    private boolean randomizeLootSeed =  config.defaultProperties.randomizeLootSeed;
+
+    @Unique
+    private boolean refillFull =  config.defaultProperties.refillFull;
+
+    @Unique
     private int refillCounter = 0;
+
+    @Unique
+    private int maxRefills = config.defaultProperties.maxRefills;
 
     @Inject(method = "unpackLootTable", at = @At("HEAD"))
     private void refillLootTable(@Nullable Player player, CallbackInfo ci) {
-        boolean empty = this.getItems().stream().allMatch(ItemStack::isEmpty) || config.refillFull;
+        boolean empty = this.getItems().stream().allMatch(ItemStack::isEmpty) || this.refillFull;
         if (player != null && this.savedLootTable != null) {
             if(this.lootTable == null) {
                 if (empty && this.canRefillFor(player)) {
+                    this.lootedUUIDs.add(player.getStringUUID());
                     // Refilling for player
-                    this.setLootTable(this.savedLootTable, config.randomizeLootSeed ? player.getRandom().nextLong() : this.savedLootTableSeed);
+                    this.setLootTable(this.savedLootTable, this.randomizeLootSeed ? player.getRandom().nextLong() : this.savedLootTableSeed);
                     this.lastRefillTime = System.currentTimeMillis();
                     ++refillCounter;
                 }
             } else {
                 // Original loot
                 this.lastRefillTime = System.currentTimeMillis();
+                this.lootedUUIDs.add(player.getStringUUID());
             }
-            this.lootedUUIDs.add(player.getStringUUID());
         }
 
     }
-
 
     @Inject(method = "tryLoadLootTable", at = @At("RETURN"))
     private void onLootTableLoad(CompoundTag compoundTag, CallbackInfoReturnable<Boolean> cir) {
         CompoundTag refillTag = compoundTag.getCompound("ChestRefill");
         if(!refillTag.isEmpty()) {
             // Has been looted already but has saved loot table
-            this.lootTable = new ResourceLocation(refillTag.getString("SavedLootTable"));
-            this.lootTableSeed = refillTag.getLong("SavedLootTableSeed");
+            this.savedLootTable = new ResourceLocation(refillTag.getString("SavedLootTable"));
+            this.savedLootTableSeed = refillTag.getLong("SavedLootTableSeed");
 
-            this.savedLootTable = this.lootTable;
-            this.savedLootTableSeed = this.lootTableSeed;
             this.refillCounter = refillTag.getInt("RefillCounter");
             this.lastRefillTime = refillTag.getLong("LastRefillTime");
 
 
             ListTag lootedUUIDsTag = (ListTag) refillTag.get("LootedUUIDs");
             if(lootedUUIDsTag != null) {
-                lootedUUIDsTag.forEach(tag -> {
-                    this.lootedUUIDs.add(tag.getAsString());
-                });
+                lootedUUIDsTag.forEach(tag -> this.lootedUUIDs.add(tag.getAsString()));
             }
-            refillTag.put("LootedUUIDs", lootedUUIDsTag);
+
+            // Per loot table customization
+            LootConfig.DefaultProperties modifiers = config.lootModifierMap.get(this.savedLootTable.toString());
+            if(modifiers == null) {
+                modifiers = config.lootModifierMap.get(this.savedLootTable.getPath());
+            }
+
+            if(modifiers != null) {
+                // This loot table has special values set
+                this.randomizeLootSeed = modifiers.randomizeLootSeed;
+                this.refillFull = modifiers.refillFull;
+                this.allowRelootByDefault = modifiers.allowRelootByDefault;
+                this.maxRefills = modifiers.maxRefills;
+                this.minWaitTime = modifiers.minWaitTime;
+            }
+
+            // Per-chest customization
+            CompoundTag customValues = refillTag.getCompound("CustomValues");
+            if(!customValues.isEmpty()) {
+                this.hadCustomData = true;
+                this.allowRelootByDefault = customValues.getBoolean("AllowReloot");
+                this.maxRefills = customValues.getInt("MaxRefills");
+                this.minWaitTime = customValues.getLong("MinWaitTime");
+            }
         } else if(this.lootTable != null) {
             this.savedLootTable = this.lootTable;
             this.savedLootTableSeed = this.lootTableSeed;
         }
     }
-
-
 
     @Inject(method = "trySaveLootTable", at = @At("HEAD"))
     private void onLootTableSave(CompoundTag compoundTag, CallbackInfoReturnable<Boolean> cir) {
@@ -111,14 +148,27 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
             this.lootedUUIDs.forEach(uuid -> lootedUUIDsTag.add(StringTag.valueOf(uuid)));
             refillTag.put("LootedUUIDs", lootedUUIDsTag);
 
+            // Allows per-chest customization
+            if (this.hadCustomData) {
+                CompoundTag customValues = new CompoundTag();
+                customValues.putBoolean("AllowReloot", this.allowRelootByDefault);
+                customValues.putInt("MaxRefills", this.maxRefills);
+                customValues.putLong("MinWaitTime", this.minWaitTime);
+                refillTag.put("CustomValues", customValues);
+            }
+
             compoundTag.put("ChestRefill", refillTag);
         }
     }
 
+    /**
+     * Whether container can be refilled for given player.
+     * @param player player to check refilling for.
+     * @return true if refilling can happen, otherwise false.
+     */
     @Unique
     private boolean canRefillFor(Player player) {
-        boolean canReloot = hasPermission(player.createCommandSourceStack(), "chestrefill.allowReloot", config.allowRelootByDefault) || !this.lootedUUIDs.contains(player.getStringUUID());
-        System.out.println(player.getName().getString() + " can reloot: " + canReloot);
+        boolean canReloot = hasPermission(player.createCommandSourceStack(), "chestrefill.allowReloot", this.allowRelootByDefault) || !this.lootedUUIDs.contains(player.getStringUUID());
         return this.canStillRefill() && this.hasEnoughTimePassed() && canReloot;
     }
 
@@ -129,8 +179,7 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
      */
     @Unique
     private boolean canStillRefill() {
-        System.out.println(refillCounter + " < " + config.maxRefills);
-        return refillCounter < config.maxRefills || config.maxRefills != -1;
+        return this.refillCounter < this.maxRefills || this.maxRefills != -1;
     }
 
     /**
@@ -140,6 +189,6 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
     @Unique
     private boolean hasEnoughTimePassed() {
         // * 1000 as seconds are used in config.
-        return this.lastRefillTime == 0L || System.currentTimeMillis() - this.lastRefillTime > config.minWaitTime * 1000;
+        return System.currentTimeMillis() - this.lastRefillTime > this.minWaitTime * 1000;
     }
 }
