@@ -11,13 +11,14 @@ import java.io.File;
 public class ChestRefill {
     public static final String MOD_ID = "chestrefill";
     public static final Logger LOGGER = LogManager.getLogger();
-    public static final LootConfig config = LootConfig.load(new File(",/config/chest_refill.json"));
     public static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .disableHtmlEscaping()
             .serializeNulls()
             .create();
+    public static LootConfig config;
 
-    public static void init() {
+    public static void init(File configFile) {
+        config = LootConfig.load(configFile);
     }
 }
