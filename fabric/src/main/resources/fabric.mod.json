@@ -13,7 +13,7 @@
     "issues": "https://github.com/samolego/ChestRefill/issues"
   },
   "license": "MIT",
-  "icon": "assets/chestrefill/icon.png",
+  "icon": "assets/chestrefill_icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [

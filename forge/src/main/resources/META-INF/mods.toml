@@ -12,7 +12,7 @@ authors = "samo_lego"
 description = '''
 A serverside mod that refills loot containers.
 '''
-#logoFile = ""
+logoFile = "chestrefill_icon.png"
 
 [[dependencies.chestrefill]]
 modId = "forge"
