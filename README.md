@@ -94,8 +94,8 @@ the both config defaults and loot table overrides.
             RefillCounter: 0,
             SavedLootTable: "minecraft:chests/igloo_chest",
             CustomValues: {
-                AllowReloot: 1b
-                MaxRefills: -1
+                AllowReloot: 1b,
+                MaxRefills: -1,
                 MinWaitTime: 60
             }
     }
