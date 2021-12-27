@@ -1,7 +1,13 @@
+import com.modrinth.minotaur.TaskModrinthUpload
+
 plugins {
     id "com.github.johnrengelman.shadow" version "7.0.0"
+
+    id 'com.matthewprenger.cursegradle'
+    id "com.modrinth.minotaur"
 }
 
+def ENV = System.getenv();
 architectury {
     platformSetupLoomIde()
     forge()
@@ -88,4 +94,48 @@ publishing {
     repositories {
         // Add repositories to publish to here.
     }
+}
+
+curseforge {
+    if (ENV.CURSEFORGE_API_KEY) {
+        apiKey = ENV.CURSEFORGE_API_KEY
+    }
+
+    project {
+        id = "536977"
+        changelog = ENV.CHANGELOG ?: "A changelog can be found at https://github.com/samolego/ChestRefill/releases/tag/${version}"
+        releaseType = "release"
+        addGameVersion project.minecraft_version
+        addGameVersion "Forge"
+
+        mainArtifact(file("${project.buildDir}/libs/${archivesBaseName}-${version}-forge.jar")) {
+            displayName = "[${project.minecraft_version}] ChestRefill ${version} [Forge]"
+        }
+
+        afterEvaluate {
+            uploadTask.dependsOn("remapJar")
+        }
+    }
+
+    options {
+        forgeGradleIntegration = false
+    }
+}
+
+task modrinth(type: TaskModrinthUpload, dependsOn: remapJar) {
+    onlyIf {
+        ENV.MODRINTH_TOKEN
+    }
+
+    token = ENV.MODRINTH_TOKEN
+    projectId = "sv1q6VzG"
+    versionNumber = project.minecraft_version + "+" + version + "-forge"
+    changelog = ENV.CHANGELOG ?: "A changelog can be found at https://github.com/samolego/ChestRefill/releases/tag/${version}"
+    versionName = "[${project.minecraft_version}] ChestRefill ${version} [Forge]"
+    releaseType = "release"
+
+    uploadFile = file("${project.buildDir}/libs/${archivesBaseName}-${version}-forge.jar")
+
+    addGameVersion("${project.minecraft_version}")
+    addLoader('forge')
 }
