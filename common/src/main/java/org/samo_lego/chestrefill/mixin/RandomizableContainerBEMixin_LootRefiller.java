@@ -29,9 +29,6 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
 
     @Shadow @Nullable protected ResourceLocation lootTable;
 
-    @Unique
-    private boolean hadCustomData = false;
-
     @Shadow public abstract void setLootTable(ResourceLocation resourceLocation, long l);
 
     @Shadow protected abstract NonNullList<ItemStack> getItems();
@@ -39,32 +36,33 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
     @Shadow protected long lootTableSeed;
 
     @Unique
-    private ResourceLocation savedLootTable;
-    @Unique
-    private long savedLootTableSeed = 0L;
-    @Unique
     private final Set<String> lootedUUIDs = new HashSet<>();
 
     @Unique
-    private long lastRefillTime = 0L;
+    private ResourceLocation savedLootTable;
 
     @Unique
-    private long minWaitTime = config.defaultProperties.minWaitTime;
+    private long savedLootTableSeed, lastRefillTime, minWaitTime;
 
     @Unique
-    private boolean allowRelootByDefault = config.defaultProperties.allowRelootByDefault;
+    private boolean allowRelootByDefault, randomizeLootSeed, refillFull, hadCustomData;
 
     @Unique
-    private boolean randomizeLootSeed =  config.defaultProperties.randomizeLootSeed;
+    private int refillCounter, maxRefills;
 
-    @Unique
-    private boolean refillFull =  config.defaultProperties.refillFull;
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onInit(CallbackInfo ci) {
+        this.maxRefills = config.defaultProperties.maxRefills;
+        this.refillFull = config.defaultProperties.refillFull;
+        this.randomizeLootSeed = config.defaultProperties.randomizeLootSeed;
+        this.allowRelootByDefault = config.defaultProperties.allowRelootByDefault;
+        this.minWaitTime = config.defaultProperties.minWaitTime;
 
-    @Unique
-    private int refillCounter = 0;
-
-    @Unique
-    private int maxRefills = config.defaultProperties.maxRefills;
+        this.refillCounter = 0;
+        this.lastRefillTime = 0;
+        this.savedLootTableSeed = 0L;
+        this.hadCustomData = false;
+    }
 
     @Inject(method = "unpackLootTable", at = @At("HEAD"))
     private void refillLootTable(@Nullable Player player, CallbackInfo ci) {
