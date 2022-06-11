@@ -21,6 +21,6 @@ public class ChestRefillForge {
     public void registerCommands(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
-        ChestRefillCommand.register(dispatcher, false);
+        ChestRefillCommand.register(dispatcher);
     }
 }

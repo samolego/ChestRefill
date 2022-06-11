@@ -33,7 +33,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_version}"
 
     modImplementation include("com.github.samolego.Config2Brigadier:config2brigadier-fabric:${rootProject.c2b_version}")
-    modImplementation('me.lucko:fabric-permissions-api:0.1-SNAPSHOT')
+    modImplementation(include('me.lucko:fabric-permissions-api:0.1-SNAPSHOT'))
 
     common(project(path: ":common", configuration: "dev")) {
         transitive = false

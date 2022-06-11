@@ -5,7 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
 import org.samo_lego.chestrefill.PlatformHelper;
 import org.samo_lego.chestrefill.storage.LootConfig;
 
@@ -16,7 +16,7 @@ import static org.samo_lego.chestrefill.ChestRefill.MOD_ID;
 import static org.samo_lego.chestrefill.ChestRefill.config;
 
 public class ChestRefillCommand {
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, boolean dedicated) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralCommandNode<CommandSourceStack> root = dispatcher.register(literal(MOD_ID)
                 .requires(src -> PlatformHelper.hasPermission(src, "chestrefill.config", src.hasPermission(4)))
                 .then(literal("reload")
@@ -35,7 +35,7 @@ public class ChestRefillCommand {
     private static int reloadConfig(CommandContext<CommandSourceStack> context) {
         LootConfig newConfig = LootConfig.load(new File(config.fileLocation));
         config.reload(newConfig);
-        context.getSource().sendSuccess(new TranslatableComponent("gui.done").append(".").withStyle(ChatFormatting.GREEN), false);
+        context.getSource().sendSuccess(Component.translatable("gui.done").append(".").withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
 }
