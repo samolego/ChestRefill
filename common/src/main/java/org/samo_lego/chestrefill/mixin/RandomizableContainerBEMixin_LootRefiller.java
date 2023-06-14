@@ -65,9 +65,9 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
 
     @Inject(method = "unpackLootTable", at = @At("HEAD"))
     private void refillLootTable(@Nullable Player player, CallbackInfo ci) {
-        boolean empty = this.getItems().stream().allMatch(ItemStack::isEmpty) || this.refillFull;
-        if (player != null && this.savedLootTable != null) {
-            if(this.lootTable == null) {
+        if (player != null) {
+            if (this.lootTable == null && this.savedLootTable != null) {
+                boolean empty = this.getItems().stream().allMatch(ItemStack::isEmpty) || this.refillFull;
                 if (empty && this.canRefillFor(player)) {
                     this.lootedUUIDs.add(player.getStringUUID());
                     // Refilling for player
@@ -79,6 +79,12 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
                 // Original loot
                 this.lastRefillTime = System.currentTimeMillis();
                 this.lootedUUIDs.add(player.getStringUUID());
+
+                if (this.lootTable != null) {
+                    this.savedLootTable = this.lootTable;
+                    this.savedLootTableSeed = this.lootTableSeed;
+
+                }
             }
         }
 
@@ -87,7 +93,7 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
     @Inject(method = "tryLoadLootTable", at = @At("RETURN"))
     private void onLootTableLoad(CompoundTag compoundTag, CallbackInfoReturnable<Boolean> cir) {
         CompoundTag refillTag = compoundTag.getCompound("ChestRefill");
-        if(!refillTag.isEmpty()) {
+        if (!refillTag.isEmpty()) {
             // Has been looted already but has saved loot table
             this.savedLootTable = new ResourceLocation(refillTag.getString("SavedLootTable"));
             this.savedLootTableSeed = refillTag.getLong("SavedLootTableSeed");
@@ -126,7 +132,7 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
                 this.maxRefills = customValues.getInt("MaxRefills");
                 this.minWaitTime = customValues.getLong("MinWaitTime");
             }
-        } else if(this.lootTable != null) {
+        } else if (this.lootTable != null) {
             this.savedLootTable = this.lootTable;
             this.savedLootTableSeed = this.lootTableSeed;
         }
@@ -134,7 +140,7 @@ public abstract class RandomizableContainerBEMixin_LootRefiller {
 
     @Inject(method = "trySaveLootTable", at = @At("HEAD"))
     private void onLootTableSave(CompoundTag compoundTag, CallbackInfoReturnable<Boolean> cir) {
-        if(this.lootTable == null && this.savedLootTable != null) {
+        if (this.lootTable == null && this.savedLootTable != null) {
             // Save only if chest was looted (if there's no more original loot table)
             CompoundTag refillTag = new CompoundTag();
 

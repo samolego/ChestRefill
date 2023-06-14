@@ -35,7 +35,7 @@ public class ChestRefillCommand {
     private static int reloadConfig(CommandContext<CommandSourceStack> context) {
         LootConfig newConfig = LootConfig.load(new File(config.fileLocation));
         config.reload(newConfig);
-        context.getSource().sendSuccess(Component.translatable("gui.done").append(".").withStyle(ChatFormatting.GREEN), false);
+        context.getSource().sendSuccess(() -> Component.translatable("gui.done").append(".").withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
 }

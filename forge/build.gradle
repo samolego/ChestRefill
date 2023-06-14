@@ -124,20 +124,22 @@ curseforge {
     }
 }
 
-task modrinth(type: TaskModrinthUpload, dependsOn: remapJar) {
+tasks.modrinth {
     onlyIf {
         ENV.MODRINTH_TOKEN
     }
+}
 
+modrinth {
     token = ENV.MODRINTH_TOKEN
     projectId = "sv1q6VzG"
     versionNumber = project.minecraft_version + "+" + version + "-forge"
     changelog = ENV.CHANGELOG ?: "A changelog can be found at https://github.com/samolego/ChestRefill/releases/tag/${version}"
     versionName = "[${project.minecraft_version}] ChestRefill ${version} [Forge]"
-    releaseType = "release"
+    versionType = "release"
 
     uploadFile = file("${project.buildDir}/libs/${archivesBaseName}-${version}-forge.jar")
 
-    addGameVersion("${project.minecraft_version}")
-    addLoader('forge')
+    gameVersions = [project.minecraft_version]
+    loaders = ['forge']
 }
