@@ -94,7 +94,7 @@ public class LootConfig implements IBrigadierConfigurator {
         try (Writer writer = new OutputStreamWriter(new FileOutputStream(this.fileLocation), StandardCharsets.UTF_8)) {
             GSON.toJson(this, writer);
         } catch (IOException e) {
-            LOGGER.error("Problem occurred when saving config: " + e.getMessage());
+            LOGGER.error("Problem occurred when saving config: {}", e.getMessage());
         }
     }
 }

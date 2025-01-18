@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "org.samo_lego.chestrefill.mixin",
-  "compatibilityLevel": "JAVA_16",
+  "compatibilityLevel": "JAVA_21",
   "mixins": [
     "RandomizableContainerBEMixin_LootRefiller"
   ],
