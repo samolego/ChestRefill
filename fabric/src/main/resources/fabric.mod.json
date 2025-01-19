@@ -13,7 +13,7 @@
     "issues": "https://github.com/samolego/ChestRefill/issues"
   },
   "license": "MIT",
-  "icon": "chestrefill_icon.png",
+  "icon": "assets/chestrefill_icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -22,7 +22,7 @@
   },
   "mixins": ["chestrefill.common.mixins.json"],
   "depends": {
-    "fabricloader": ">=0.16.0",
+    "fabricloader": ">=0.7.4",
     "fabric": "*"
   }
 }

@@ -1,21 +1,21 @@
 package org.samo_lego.chestrefill.mixin;
 
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
-import net.minecraft.world.level.storage.loot.LootTable;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,43 +23,22 @@ import java.util.Set;
 import static org.samo_lego.chestrefill.ChestRefill.config;
 import static org.samo_lego.chestrefill.PlatformHelper.hasPermission;
 
+@Mixin(RandomizableContainerBlockEntity.class)
+public abstract class RandomizableContainerBEMixin_LootRefiller {
 
-/**
- * RandomizableContainerBEMixin_LootRefiller is a mixin class that implements the RandomizableContainer interface for
- * BlockEntities (BEs) that can have loot tables and can be refilled with loot.
- * It provides methods to refill the container's loot table, save and load the loot table, and modify the refill behavior of the container.
- * The class relies on a configuration file to customize the refill behavior of each specific loot table and each container.
- * This class should not be instantiated directly, instead, it should be mixed into specific BE classes that implement the RandomizableContainer interface.
- * <p>
- * This class uses mixin annotations to redirect and inject methods from the original class.
- *
- * @remarks This documentation is generated automatically and may contain errors or inconsistencies.
- */
-@SuppressWarnings("AddedMixinMembersNamePattern")
-@Mixin(value = RandomizableContainerBlockEntity.class, remap = false)
-public abstract class RandomizableContainerBEMixin_LootRefiller implements RandomizableContainer {
+    @Shadow @Nullable protected ResourceLocation lootTable;
 
-    @Shadow
-    @Nullable
-    protected ResourceKey<LootTable> lootTable;
+    @Shadow public abstract void setLootTable(ResourceLocation resourceLocation, long l);
 
-    @Unique
-    private ResourceKey<LootTable> savedLootTable;
+    @Shadow protected abstract NonNullList<ItemStack> getItems();
 
-    @Shadow
-    protected long lootTableSeed;
+    @Shadow protected long lootTableSeed;
 
     @Unique
     private final Set<String> lootedUUIDs = new HashSet<>();
 
-    @Shadow
-    public abstract void setLootTable(ResourceKey<LootTable> resourceKey);
-
-    @Shadow
-    public abstract void setLootTableSeed(long l);
-
-    @Shadow
-    public abstract boolean isEmpty();
+    @Unique
+    private ResourceLocation savedLootTable;
 
     @Unique
     private long savedLootTableSeed, lastRefillTime, minWaitTime;
@@ -84,26 +63,15 @@ public abstract class RandomizableContainerBEMixin_LootRefiller implements Rando
         this.hadCustomData = false;
     }
 
-    public void unpackLootTable(@Nullable Player player) {
-        refillLootTable(player);
-        RandomizableContainer.super.unpackLootTable(player);
-    }
-
-    /**
-     * Refills the loot table of the container.
-     *
-     * @param player The player opening the container. Can be null.
-     */
-    @Unique
-    private void refillLootTable(@Nullable Player player) {
+    @Inject(method = "unpackLootTable", at = @At("HEAD"))
+    private void refillLootTable(@Nullable Player player, CallbackInfo ci) {
         if (player != null) {
             if (this.lootTable == null && this.savedLootTable != null) {
-                boolean empty = isEmpty() || this.refillFull;
+                boolean empty = this.getItems().stream().allMatch(ItemStack::isEmpty) || this.refillFull;
                 if (empty && this.canRefillFor(player)) {
                     this.lootedUUIDs.add(player.getStringUUID());
                     // Refilling for player
-                    this.setLootTable(this.savedLootTable);
-                    this.setLootTableSeed(this.randomizeLootSeed ? player.getRandom().nextLong() : this.savedLootTableSeed);
+                    this.setLootTable(this.savedLootTable, this.randomizeLootSeed ? player.getRandom().nextLong() : this.savedLootTableSeed);
                     this.lastRefillTime = System.currentTimeMillis();
                     ++refillCounter;
                 }
@@ -115,48 +83,24 @@ public abstract class RandomizableContainerBEMixin_LootRefiller implements Rando
                 if (this.lootTable != null) {
                     this.savedLootTable = this.lootTable;
                     this.savedLootTableSeed = this.lootTableSeed;
+
                 }
             }
         }
+
     }
 
-    /**
-     * Tries to load the loot table from the given compound tag and sets it to the container.
-     *
-     * @param compoundTag The compound tag containing the loot table information.
-     * @return true if the loot table was successfully loaded and set, false otherwise.
-     */
-    public boolean tryLoadLootTable(@NotNull CompoundTag compoundTag) {
-        if (compoundTag.contains(LOOT_TABLE_TAG, 8)) {
-            this.setLootTable(ResourceKey.create(Registries.LOOT_TABLE, ResourceLocation.parse(compoundTag.getString(LOOT_TABLE_TAG))));
-            if (compoundTag.contains(LOOT_TABLE_SEED_TAG, 4)) {
-                this.setLootTableSeed(compoundTag.getLong(LOOT_TABLE_SEED_TAG));
-            } else {
-                this.setLootTableSeed(0L);
-            }
-            this.onLootTableLoad(compoundTag);
-            return true;
-        } else {
-            this.onLootTableLoad(compoundTag);
-            return false;
-        }
-    }
-
-    /**
-     * Loads the loot table from the given compound tag and performs various operations based on the tag contents and configs.
-     *
-     * @param compoundTag The compound tag containing the loot table information.
-     */
-    @Unique
-    private void onLootTableLoad(@NotNull CompoundTag compoundTag) {
+    @Inject(method = "tryLoadLootTable", at = @At("RETURN"))
+    private void onLootTableLoad(CompoundTag compoundTag, CallbackInfoReturnable<Boolean> cir) {
         CompoundTag refillTag = compoundTag.getCompound("ChestRefill");
         if (!refillTag.isEmpty()) {
             // Has been looted already but has saved loot table
-            this.savedLootTable = ResourceKey.create(Registries.LOOT_TABLE, ResourceLocation.parse(refillTag.getString("SavedLootTable")));
+            this.savedLootTable = new ResourceLocation(refillTag.getString("SavedLootTable"));
             this.savedLootTableSeed = refillTag.getLong("SavedLootTableSeed");
 
             this.refillCounter = refillTag.getInt("RefillCounter");
             this.lastRefillTime = refillTag.getLong("LastRefillTime");
+
 
             ListTag lootedUUIDsTag = (ListTag) refillTag.get("LootedUUIDs");
             if(lootedUUIDsTag != null) {
@@ -166,7 +110,7 @@ public abstract class RandomizableContainerBEMixin_LootRefiller implements Rando
             // Per loot table customization
             var modifiers = config.lootModifierMap.get(this.savedLootTable.toString());
             if (modifiers == null) {
-                modifiers = config.lootModifierMap.get(this.savedLootTable.registry().getPath());
+                modifiers = config.lootModifierMap.get(this.savedLootTable.getPath());
             }
 
             if(modifiers != null) {
@@ -194,24 +138,8 @@ public abstract class RandomizableContainerBEMixin_LootRefiller implements Rando
         }
     }
 
-    /**
-     * Tries to save the loot table information to a CompoundTag.
-     *
-     * @param compoundTag The CompoundTag to save the loot table information to.
-     * @return true if the loot table was successfully saved, false otherwise.
-     */
-    public boolean trySaveLootTable(CompoundTag compoundTag) {
-        this.onLootTableSave(compoundTag);
-        return RandomizableContainer.super.trySaveLootTable(compoundTag);
-    }
-
-    /**
-     * Saves the loot table information to a CompoundTag.
-     *
-     * @param compoundTag The CompoundTag to save the loot table information to.
-     */
-    @Unique
-    private void onLootTableSave(CompoundTag compoundTag) {
+    @Inject(method = "trySaveLootTable", at = @At("HEAD"))
+    private void onLootTableSave(CompoundTag compoundTag, CallbackInfoReturnable<Boolean> cir) {
         if (this.lootTable == null && this.savedLootTable != null) {
             // Save only if chest was looted (if there's no more original loot table)
             CompoundTag refillTag = new CompoundTag();
@@ -247,7 +175,7 @@ public abstract class RandomizableContainerBEMixin_LootRefiller implements Rando
      * @return true if refilling can happen, otherwise false.
      */
     @Unique
-    private boolean canRefillFor(@NotNull Player player) {
+    private boolean canRefillFor(Player player) {
         boolean relootPermission = hasPermission(player.createCommandSourceStack(), "chestrefill.allowReloot", this.allowRelootByDefault) || !this.lootedUUIDs.contains(player.getStringUUID());
         return this.canStillRefill() && this.hasEnoughTimePassed() && relootPermission;
     }

@@ -1,10 +1,12 @@
+import com.modrinth.minotaur.TaskModrinthUpload
+
 plugins {
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "com.github.johnrengelman.shadow" version "7.0.0"
 
     id 'com.matthewprenger.cursegradle'
     id "com.modrinth.minotaur"
 }
-def ENV = System.getenv()
+def ENV = System.getenv();
 
 architectury {
     platformSetupLoomIde()
@@ -51,17 +53,17 @@ processResources {
 
 shadowJar {
     configurations = [project.configurations.shadowCommon]
-    archiveClassifier = "dev-shadow"
+    classifier "dev-shadow"
 }
 
 remapJar {
     input.set shadowJar.archiveFile
     dependsOn shadowJar
-    archiveClassifier = "fabric"
+    classifier "fabric"
 }
 
 jar {
-    archiveClassifier = "dev"
+    classifier "dev"
 }
 
 sourcesJar {
