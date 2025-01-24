@@ -39,7 +39,7 @@ import static org.samo_lego.chestrefill.ChestRefill.config;
  * This class uses mixin annotations to redirect and inject methods from the original class.
  */
 @SuppressWarnings("AddedMixinMembersNamePattern")
-@Mixin(value = RandomizableContainerBlockEntity.class, remap = false)
+@Mixin(value = RandomizableContainerBlockEntity.class)
 public abstract class RandomizableContainerBEMixin_LootRefiller extends BaseContainerBlockEntity implements RandomizableContainer {
     protected RandomizableContainerBEMixin_LootRefiller(
             BlockEntityType<?> type,
